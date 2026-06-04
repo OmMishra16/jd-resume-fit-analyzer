@@ -1,0 +1,30 @@
+Rohan Mehta
+Pune, India | rohan.mehta@email.com | github.com/rohan-design | +91-92222-22222
+
+SUMMARY
+Frontend developer and UI enthusiast with 2 years of experience building responsive web
+interfaces. Passionate about design systems and pixel-perfect user experiences.
+
+SKILLS
+- Languages: JavaScript, TypeScript, HTML, CSS
+- Frontend: React, Next.js, Tailwind CSS, Redux
+- Design: Figma, Adobe XD, responsive design
+- Tools: Git, Vite, Webpack
+
+EXPERIENCE
+Frontend Developer — PixelWorks Agency
+Jan 2023 - Present (2 years)
+- Built 15+ marketing websites and dashboards using React and Next.js.
+- Implemented a reusable component library with Tailwind CSS.
+- Improved Lighthouse performance scores from 60 to 95 on key pages.
+- Collaborated with designers to deliver pixel-perfect UIs.
+
+PROJECTS
+PortfolioGen — React + Next.js
+- A no-code portfolio website generator for designers.
+
+EDUCATION
+B.Des, Interaction Design — 2022
+
+INTERESTS
+- UI animation, typography, accessibility

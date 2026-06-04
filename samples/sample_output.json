@@ -1,0 +1,75 @@
+{
+  "_note": "Representative end-to-end run for samples/sample_jd.txt + samples/sample_resume.pdf (moderate fit). Captured from the key nodes. Exact numbers vary slightly per model run.",
+
+  "jd_requirement_extractor": {
+    "role_title": "Junior Backend Engineer (Python)",
+    "required_skills": ["Python", "REST API", "PostgreSQL", "Git", "Unit Testing"],
+    "preferred_skills": ["Docker", "AWS", "Kafka", "CI/CD"],
+    "min_experience_years": 1,
+    "responsibilities": [
+      "Design and maintain RESTful APIs in Python (FastAPI or Django)",
+      "Write tested, maintainable code and do code reviews",
+      "Work with PostgreSQL and write efficient SQL",
+      "Containerize services with Docker and help maintain CI/CD"
+    ]
+  },
+
+  "resume_profiler": {
+    "candidate_name": "Aarav Sharma",
+    "candidate_skills": ["Python", "FastAPI", "Flask", "REST API", "PostgreSQL", "Git", "pytest", "Postman", "Linux"],
+    "total_experience_years": 1,
+    "education": "B.Tech, Computer Science (2024)",
+    "projects": ["ExpenseSplit — bill-splitting REST API with JWT auth and group expense tracking"],
+    "domains": ["fintech", "backend"]
+  },
+
+  "fit_analyst": {
+    "matched_skills": ["Python", "FastAPI", "REST API", "PostgreSQL", "Git", "pytest"],
+    "missing_skills": ["Docker", "AWS", "Kafka"],
+    "dimension_scores": { "skills_match": 72, "experience": 60, "projects_relevance": 70 },
+    "evidence": {
+      "skills_match": "Covers all core requirements (Python, REST, PostgreSQL, Git, testing) but lacks Docker, AWS and messaging.",
+      "experience": "About 1 year via a fintech internship, meeting the lower bound of the 1-3 year range.",
+      "projects_relevance": "ExpenseSplit is a directly relevant FastAPI + PostgreSQL REST project."
+    },
+    "strengths": [
+      "Solid core backend stack (Python, FastAPI, REST, PostgreSQL)",
+      "Real fintech internship with production exposure",
+      "Has written tests with pytest"
+    ],
+    "gaps": [
+      "No Docker / containerization experience",
+      "No cloud (AWS/GCP) experience",
+      "Limited total experience (~1 year)"
+    ],
+    "verdict": "A promising early-career backend candidate who covers the core stack but is light on infrastructure and seniority."
+  },
+
+  "weight_and_bucket": {
+    "candidate_name": "Aarav Sharma",
+    "role_title": "Junior Backend Engineer (Python)",
+    "weights": { "skills_match": 0.5, "experience": 0.3, "projects_relevance": 0.2 },
+    "dimension_scores": { "skills_match": 72, "experience": 60, "projects_relevance": 70 },
+    "final_score": 68,
+    "coverage_pct": 80,
+    "category": "MODERATE",
+    "decision": "Pending human review"
+  },
+
+  "human_review": { "Reviewer Decision": "Approve", "Reviewer Note": "Strong fundamentals, willing to train on Docker/AWS." },
+
+  "final_decision": "Shortlisted (after human review)",
+
+  "log_row": {
+    "timestamp": "2026-06-04T19:55:00.000+05:30",
+    "candidate_name": "Aarav Sharma",
+    "candidate_email": "aarav.sharma@email.com",
+    "role_title": "Junior Backend Engineer (Python)",
+    "final_score": 68,
+    "coverage_pct": 80,
+    "category": "MODERATE",
+    "decision": "Shortlisted (after human review)",
+    "matched_skills": ["Python", "FastAPI", "REST API", "PostgreSQL", "Git", "pytest"],
+    "missing_skills": ["Docker", "AWS", "Kafka"]
+  }
+}

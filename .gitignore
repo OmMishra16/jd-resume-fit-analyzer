@@ -1,0 +1,23 @@
+# local n8n test instance (created when validating the workflow import)
+.n8n-test/
+.n8n/
+
+# node
+node_modules/
+npm-debug.log*
+
+# os
+.DS_Store
+
+# local run logs produced by the workflow's "Append to Log File" node
+jd-resume-fit-runs.jsonl
+
+# secrets — never commit API keys
+.env
+*.local
+
+# assignment brief (not part of our deliverable)
+agentic_workflow_assignment.pdf
+
+# local-only recording notes
+loom_script.md

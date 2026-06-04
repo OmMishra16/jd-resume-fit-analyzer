@@ -1,0 +1,33 @@
+Priya Nair
+Bengaluru, India | priya.nair@email.com | github.com/priya-codes | +91-91111-11111
+
+SUMMARY
+Backend engineer with 3 years of experience building and scaling Python services for fintech
+and payments products. Strong in API design, relational databases, containerization, and CI/CD.
+
+SKILLS
+- Languages: Python, SQL, Bash
+- Backend: FastAPI, Django, REST API design, async programming
+- Databases: PostgreSQL (advanced: indexing, query optimization), Redis
+- Infra: Docker, AWS (ECS, RDS, S3), GitHub Actions CI/CD
+- Messaging: Kafka, RabbitMQ
+- Testing: pytest, integration testing
+
+EXPERIENCE
+Backend Engineer — FinPay (Payments Startup)
+Jun 2022 - Present (3 years)
+- Designed and built 40+ RESTful endpoints in FastAPI powering a payments platform with 200k+ users.
+- Optimized PostgreSQL queries and added indexes, cutting p95 API latency by 45%.
+- Containerized all services with Docker and maintained GitHub Actions CI/CD pipelines.
+- Built a Kafka-based event pipeline for transaction reconciliation.
+- Led code reviews and mentored two interns.
+
+PROJECTS
+LedgerLite — Python + Django + PostgreSQL + Docker
+- Open-source double-entry accounting API, 500+ GitHub stars.
+
+EDUCATION
+B.Tech, Computer Science — 2021
+
+CERTIFICATIONS
+- AWS Certified Developer – Associate (2023)

@@ -1,0 +1,803 @@
+{
+  "name": "JD–Resume Fit Analyzer",
+  "nodes": [
+    {
+      "id": "submit-jd-resume",
+      "name": "Submit JD + Resume",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -1100,
+        200
+      ],
+      "webhookId": "jd-resume-fit-analyzer-form",
+      "parameters": {
+        "formTitle": "JD–Resume Fit Analyzer",
+        "formDescription": "Paste a job description and upload a resume (PDF). You will get a structured fit report.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Candidate Name",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Candidate Email",
+              "fieldType": "email",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Job Description",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Resume",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "customCss": ":root {\n  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;\n  --color-background: #eef2ff;\n  --color-card-bg: #ffffff;\n  --color-card-border: #e2e8f0;\n  --color-card-shadow: rgba(15, 23, 42, 0.10);\n  --card-border-radius: 16px;\n  --border-radius-card: 16px;\n  --card-padding: 32px;\n  --color-header: #0f172a;\n  --color-header-subtext: #475569;\n  --font-size-header: 26px;\n  --font-size-subheader: 16px;\n  --color-label: #0f172a;\n  --color-required: #6366f1;\n  --font-weight-bold: 600;\n  --color-input-border: #cbd5e1;\n  --color-input-text: #0f172a;\n  --color-focus-border: #6366f1;\n  --border-radius-input: 10px;\n  --color-submit-btn-bg: #4f46e5;\n  --color-submit-btn-text: #ffffff;\n  --color-html-text: #334155;\n  --color-html-link: #4f46e5;\n  --font-size-paragraph: 15px;\n}\nbody { background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%) !important; }"
+        }
+      }
+    },
+    {
+      "id": "extract-resume-text",
+      "name": "Extract Resume Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        200
+      ],
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "Resume",
+        "options": {}
+      }
+    },
+    {
+      "id": "prepare-validate-input",
+      "name": "Prepare & Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// DETERMINISTIC NODE — \"Prepare & Validate Input\"\n// n8n Code node (Run Once for All Items). Pure rules, no AI.\n//\n// Purpose:\n//  - Consolidate the raw form + extracted-file data into clean fields.\n//  - Decide is_valid using simple, auditable rules (presence + minimum length).\n// The downstream IF node routes on `is_valid`; the fallback branch handles invalid input.\n\n// The Form Trigger output (name, email, JD textarea) is on the trigger node.\n// The Extract-from-File node output puts the resume text on `text` of THIS item.\nconst form = $('Submit JD + Resume').first().json;\n\nconst jdText = (form['Job Description'] || '').toString().trim();\nconst candidateName = (form['Candidate Name'] || '').toString().trim();\nconst candidateEmail = (form['Candidate Email'] || '').toString().trim();\n\n// Resume text comes from the Extract from File node (PDF/DOCX/TXT -> text).\nconst resumeText = ($json.text || '').toString().trim();\n\nconst MIN_LEN = 50; // a real JD/resume is well over 50 chars; below this it's junk/empty.\n\nconst errors = [];\nif (jdText.length < MIN_LEN) errors.push('Job Description is missing or too short.');\nif (resumeText.length < MIN_LEN) errors.push('Resume could not be read or is too short (is it a scanned/image PDF?).');\n\nreturn [{\n  json: {\n    candidate_name: candidateName || 'Candidate',\n    candidate_email: candidateEmail || '',\n    jd_text: jdText,\n    resume_text: resumeText,\n    is_valid: errors.length === 0,\n    validation_error: errors.join(' ')\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "valid-input",
+      "name": "Valid Input?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.is_valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "invalid-input",
+      "name": "Invalid Input",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.4,
+      "position": [
+        -220,
+        420
+      ],
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "Could not process your submission",
+        "completionMessage": "={{ $json.validation_error }}",
+        "options": {
+          "customCss": ":root {\n  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;\n  --color-background: #eef2ff;\n  --color-card-bg: #ffffff;\n  --color-card-border: #e2e8f0;\n  --color-card-shadow: rgba(15, 23, 42, 0.10);\n  --card-border-radius: 16px;\n  --border-radius-card: 16px;\n  --card-padding: 32px;\n  --color-header: #0f172a;\n  --color-header-subtext: #475569;\n  --font-size-header: 26px;\n  --font-size-subheader: 16px;\n  --color-label: #0f172a;\n  --color-required: #6366f1;\n  --font-weight-bold: 600;\n  --color-input-border: #cbd5e1;\n  --color-input-text: #0f172a;\n  --color-focus-border: #6366f1;\n  --border-radius-input: 10px;\n  --color-submit-btn-bg: #4f46e5;\n  --color-submit-btn-text: #ffffff;\n  --color-html-text: #334155;\n  --color-html-link: #4f46e5;\n  --font-size-paragraph: 15px;\n}\nbody { background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%) !important; }"
+        }
+      }
+    },
+    {
+      "id": "google-gemini-chat-model",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        660
+      ],
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "REPLACE_WITH_YOUR_GEMINI_CREDENTIAL",
+          "name": "Google Gemini (PaLM) Api account"
+        }
+      }
+    },
+    {
+      "id": "jd-requirement-extractor",
+      "name": "JD Requirement Extractor",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        -220,
+        60
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a precise technical recruiter assistant. Read the JOB DESCRIPTION and extract its requirements as structured data. Do not invent requirements that are not stated or clearly implied.\n\nRules:\n- \"required_skills\" = skills listed as must-have / required / core.\n- \"preferred_skills\" = skills listed as nice-to-have / bonus / preferred.\n- \"min_experience_years\" = minimum years required. For a range like \"1-3 years\" use the lower bound. If none stated, use 0.\n- Normalize skill names to common short forms (e.g. \"PostgreSQL\", \"REST API\", \"Docker\").\n- Be concise.\n\nJOB DESCRIPTION:\n{{ $('Prepare & Validate Input').first().json.jd_text }}",
+        "hasOutputParser": true
+      }
+    },
+    {
+      "id": "parser-jd-requirements",
+      "name": "Parser: JD Requirements",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -120,
+        260
+      ],
+      "parameters": {
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"role_title\": \"Junior Backend Engineer (Python)\",\n  \"required_skills\": [\"Python\", \"REST API\", \"PostgreSQL\", \"Git\", \"Unit Testing\"],\n  \"preferred_skills\": [\"Docker\", \"AWS\", \"Kafka\", \"CI/CD\"],\n  \"min_experience_years\": 1,\n  \"responsibilities\": [\n    \"Design and maintain RESTful APIs in Python\",\n    \"Write tested, maintainable code and do code reviews\",\n    \"Work with PostgreSQL and write efficient SQL\"\n  ]\n}"
+      }
+    },
+    {
+      "id": "resume-profiler",
+      "name": "Resume Profiler",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        60,
+        60
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a precise resume parser. Read the RESUME and extract the candidate's profile as structured data. Only use information present in the resume; do not guess.\n\nFairness rules: judge ONLY skills, experience, and projects. Do not use name, gender, age, religion, or college prestige for any evaluative purpose (candidate_name is captured only for the report header).\n\nRules:\n- \"candidate_skills\" = concrete technical skills/technologies the candidate has used.\n- \"total_experience_years\" = total professional experience in years (sum internships + jobs); estimate conservatively from dates if unclear; 0 if none.\n- Normalize skill names (e.g. \"PostgreSQL\", \"FastAPI\", \"Docker\").\n- \"projects\" = short titles/descriptions of notable projects.\n- \"domains\" = industry/domain areas (e.g. \"fintech\", \"frontend\").\n- Be concise.\n\nRESUME:\n{{ $('Prepare & Validate Input').first().json.resume_text }}",
+        "hasOutputParser": true
+      }
+    },
+    {
+      "id": "parser-resume-profile",
+      "name": "Parser: Resume Profile",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        260
+      ],
+      "parameters": {
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"candidate_name\": \"Aarav Sharma\",\n  \"candidate_skills\": [\"Python\", \"FastAPI\", \"Flask\", \"REST API\", \"PostgreSQL\", \"Git\", \"pytest\"],\n  \"total_experience_years\": 1,\n  \"education\": \"B.Tech, Computer Science (2024)\",\n  \"projects\": [\"ExpenseSplit — bill-splitting REST API with JWT auth\"],\n  \"domains\": [\"fintech\", \"backend\"]\n}"
+      }
+    },
+    {
+      "id": "fit-analyst",
+      "name": "Fit Analyst",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        340,
+        60
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a fair, evidence-driven hiring analyst. Compare the JOB REQUIREMENTS against the CANDIDATE PROFILE. Score three dimensions from 0 to 100 and justify each with one sentence of evidence grounded in the given data. Do NOT compute an overall score — only the three dimension scores. Be objective and consistent.\n\nFairness rules: base every score ONLY on skills, experience, and project relevance. Ignore name, gender, age, and college prestige.\n\nDimensions:\n- skills_match (0-100): how well the candidate's skills cover the required + preferred skills.\n- experience (0-100): how the candidate's years/seniority compare to min_experience_years and the responsibilities.\n- projects_relevance (0-100): how relevant the candidate's projects/domains are to the role.\n\nAlso return: matched_skills, missing_skills, strengths (2-4), gaps (2-4), and a neutral one-sentence verdict (no hire decision — that is decided later).\n\nJOB REQUIREMENTS:\n{{ JSON.stringify($('JD Requirement Extractor').first().json.output) }}\n\nCANDIDATE PROFILE:\n{{ JSON.stringify($('Resume Profiler').first().json.output) }}",
+        "hasOutputParser": true
+      }
+    },
+    {
+      "id": "parser-fit-analysis",
+      "name": "Parser: Fit Analysis",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        260
+      ],
+      "parameters": {
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"matched_skills\": [\"Python\", \"FastAPI\", \"REST API\", \"PostgreSQL\", \"Git\", \"pytest\"],\n  \"missing_skills\": [\"Docker\", \"AWS\", \"Kafka\"],\n  \"dimension_scores\": {\n    \"skills_match\": 72,\n    \"experience\": 60,\n    \"projects_relevance\": 70\n  },\n  \"evidence\": {\n    \"skills_match\": \"Covers core Python/REST/PostgreSQL but lacks Docker, AWS and messaging.\",\n    \"experience\": \"About 1 year (internship), meeting the lower bound of the 1-3 year range.\",\n    \"projects_relevance\": \"ExpenseSplit is a relevant FastAPI + PostgreSQL REST project.\"\n  },\n  \"strengths\": [\n    \"Solid core backend stack (Python, FastAPI, REST, PostgreSQL)\",\n    \"Real fintech internship with production exposure\",\n    \"Has written tests (pytest)\"\n  ],\n  \"gaps\": [\n    \"No Docker / containerization experience\",\n    \"No cloud (AWS/GCP) experience\",\n    \"Limited total experience (~1 year)\"\n  ],\n  \"verdict\": \"A promising early-career backend candidate who covers the core stack but is light on infra and seniority.\"\n}"
+      }
+    },
+    {
+      "id": "weight-bucket",
+      "name": "Weight & Bucket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        60
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// DETERMINISTIC NODE — \"Weight & Bucket\"\n// n8n Code node (Run Once for All Items). Pure math + rules, no AI.\n//\n// This is the core \"AI proposes, deterministic decides\" boundary:\n//  - The Fit Analyst (AI) returns per-dimension sub-scores (0-100) + matched/missing skills.\n//  - THIS node applies fixed weights to compute the final score, an independent coverage\n//    cross-check, and the STRONG/MODERATE/WEAK category. None of this is left to the AI,\n//    so scoring is stable, explainable, and auditable.\n\n// Declarative scoring rubric (change weights here, behavior stays predictable).\nconst WEIGHTS = { skills_match: 0.5, experience: 0.3, projects_relevance: 0.2 };\nconst THRESHOLDS = { strong: 75, moderate: 50 }; // >=75 STRONG, 50-74 MODERATE, <50 WEAK\n\nconst fit = $('Fit Analyst').first().json.output;\nconst jd = $('JD Requirement Extractor').first().json.output;\nconst prep = $('Prepare & Validate Input').first().json;\n\nconst dim = fit.dimension_scores || {};\nconst clamp = (n) => Math.max(0, Math.min(100, Number(n) || 0));\n\nconst skills = clamp(dim.skills_match);\nconst experience = clamp(dim.experience);\nconst projects = clamp(dim.projects_relevance);\n\n// Weighted final score (deterministic).\nconst final_score = Math.round(\n  skills * WEIGHTS.skills_match +\n  experience * WEIGHTS.experience +\n  projects * WEIGHTS.projects_relevance\n);\n\n// Independent cross-check: how many required skills are actually matched?\nconst required = Array.isArray(jd.required_skills) ? jd.required_skills : [];\nconst matched = Array.isArray(fit.matched_skills) ? fit.matched_skills : [];\nconst matchedLower = matched.map((s) => String(s).toLowerCase());\nconst coveredRequired = required.filter((r) =>\n  matchedLower.some((m) => m.includes(String(r).toLowerCase()) || String(r).toLowerCase().includes(m))\n);\nconst coverage_pct = required.length\n  ? Math.round((coveredRequired.length / required.length) * 100)\n  : 0;\n\n// Category (deterministic routing key).\nlet category = 'WEAK';\nif (final_score >= THRESHOLDS.strong) category = 'STRONG';\nelse if (final_score >= THRESHOLDS.moderate) category = 'MODERATE';\n\n// Default decision per category (MODERATE is overridden later by the human reviewer).\nconst decisionByCategory = {\n  STRONG: 'Shortlisted (auto)',\n  MODERATE: 'Pending human review',\n  WEAK: 'Not a fit — feedback sent'\n};\n\nreturn [{\n  json: {\n    candidate_name: prep.candidate_name,\n    candidate_email: prep.candidate_email,\n    role_title: jd.role_title || '',\n    final_score,\n    coverage_pct,\n    category,\n    decision: decisionByCategory[category],\n    weights: WEIGHTS,\n    dimension_scores: { skills_match: skills, experience, projects_relevance: projects },\n    matched_skills: matched,\n    missing_skills: fit.missing_skills || [],\n    strengths: fit.strengths || [],\n    gaps: fit.gaps || [],\n    verdict: fit.verdict || ''\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "route-by-category",
+      "name": "Route by Category",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        840,
+        60
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "STRONG",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "STRONG"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "MODERATE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "MODERATE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "WEAK",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "WEAK"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "decision-shortlisted-auto-",
+      "name": "Decision: Shortlisted (auto)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1080,
+        -160
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dec",
+              "name": "decision",
+              "value": "Shortlisted (auto)",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "human-review",
+      "name": "Human Review",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1080,
+        60
+      ],
+      "webhookId": "jd-resume-human-review",
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Human Review — Moderate Fit Candidate",
+        "formDescription": "=Candidate {{ $json.candidate_name }} scored {{ $json.final_score }}/100 ({{ $json.coverage_pct }}% required-skill coverage) for {{ $json.role_title }}.\n\nVerdict: {{ $json.verdict }}\n\n✅ Matched skills: {{ ($json.matched_skills || []).join(\", \") }}\n❌ Missing skills: {{ ($json.missing_skills || []).join(\", \") }}\n\nStrengths: {{ ($json.strengths || []).join(\"; \") }}\nGaps: {{ ($json.gaps || []).join(\"; \") }}\n\nApprove to shortlist, or reject.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Reviewer Decision",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approve"
+                  },
+                  {
+                    "option": "Reject"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Reviewer Note",
+              "fieldType": "textarea",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {
+          "customCss": ":root {\n  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;\n  --color-background: #eef2ff;\n  --color-card-bg: #ffffff;\n  --color-card-border: #e2e8f0;\n  --color-card-shadow: rgba(15, 23, 42, 0.10);\n  --card-border-radius: 16px;\n  --border-radius-card: 16px;\n  --card-padding: 32px;\n  --color-header: #0f172a;\n  --color-header-subtext: #475569;\n  --font-size-header: 26px;\n  --font-size-subheader: 16px;\n  --color-label: #0f172a;\n  --color-required: #6366f1;\n  --font-weight-bold: 600;\n  --color-input-border: #cbd5e1;\n  --color-input-text: #0f172a;\n  --color-focus-border: #6366f1;\n  --border-radius-input: 10px;\n  --color-submit-btn-bg: #4f46e5;\n  --color-submit-btn-text: #ffffff;\n  --color-html-text: #334155;\n  --color-html-link: #4f46e5;\n  --font-size-paragraph: 15px;\n}\nbody { background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%) !important; }"
+        }
+      }
+    },
+    {
+      "id": "decision-from-review",
+      "name": "Decision from Review",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1300,
+        60
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dec",
+              "name": "decision",
+              "value": "={{ $json['Reviewer Decision'] === 'Approve' ? 'Shortlisted (after human review)' : 'Rejected (after human review)' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "resume-coach",
+      "name": "Resume Coach",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1080,
+        280
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a supportive career coach. The candidate is NOT currently a strong fit for this role. Write encouraging, specific, actionable guidance so they can become a stronger fit. Be concrete and kind; reference the actual missing skills and gaps.\n\nProvide: improvement_summary (2-3 sentences, honest but encouraging), priority_skills_to_learn (3-5, most impactful first), resume_fixes (3-5 concrete improvements), encouragement (one warm closing sentence).\n\nROLE: {{ $('JD Requirement Extractor').first().json.output.role_title }}\nMISSING SKILLS: {{ JSON.stringify($('Fit Analyst').first().json.output.missing_skills) }}\nGAPS: {{ JSON.stringify($('Fit Analyst').first().json.output.gaps) }}\nCANDIDATE SKILLS: {{ JSON.stringify($('Resume Profiler').first().json.output.candidate_skills) }}",
+        "hasOutputParser": true
+      }
+    },
+    {
+      "id": "parser-coach-feedback",
+      "name": "Parser: Coach Feedback",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1180,
+        460
+      ],
+      "parameters": {
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"improvement_summary\": \"You have a strong core backend foundation. Closing a few infrastructure gaps would move you from a borderline to a competitive candidate for this role.\",\n  \"priority_skills_to_learn\": [\"Docker\", \"AWS (or GCP) basics\", \"CI/CD with GitHub Actions\"],\n  \"resume_fixes\": [\n    \"Add a 'Deployment/Infra' line showing any Docker or cloud usage, even from side projects\",\n    \"Quantify more impact with metrics (latency, users, coverage)\",\n    \"Add a CI/CD badge or note to your ExpenseSplit project\"\n  ],\n  \"encouragement\": \"You are closer than you think — a couple of focused weeks on Docker and cloud basics will make a real difference.\"\n}"
+      }
+    },
+    {
+      "id": "decision-feedback-sent",
+      "name": "Decision: Feedback Sent",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1300,
+        280
+      ],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": true,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dec",
+              "name": "decision",
+              "value": "Feedback sent",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "build-report",
+      "name": "Build Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        60
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// DETERMINISTIC NODE — \"Build Report\"\n// n8n Code node (Run Once for All Items). Converges all 3 branches into one readable report.\n//\n// Reads the stable evaluation from \"Weight & Bucket\", the branch's `decision`, and (only on the\n// WEAK branch) the coaching output. The Resume Coach reference is wrapped in try/catch because it\n// does not run on the STRONG/MODERATE branches — graceful handling of an optional upstream node.\n\nconst base = $('Weight & Bucket').first().json;\nconst decision = $json.decision || base.decision;\n\nlet coach = null;\ntry {\n  coach = $('Resume Coach').first().json.output;\n} catch (e) {\n  coach = null; // Coach only runs on the WEAK branch.\n}\n\nconst lines = [];\nlines.push(`Candidate: ${base.candidate_name}`);\nlines.push(`Role: ${base.role_title}`);\nlines.push(`Category: ${base.category}   |   Fit Score: ${base.final_score}/100   |   Required-skill coverage: ${base.coverage_pct}%`);\nlines.push(`Decision: ${decision}`);\nlines.push('');\nlines.push(`Verdict: ${base.verdict}`);\nlines.push('');\nlines.push(`Matched skills: ${(base.matched_skills || []).join(', ') || '—'}`);\nlines.push(`Missing skills: ${(base.missing_skills || []).join(', ') || '—'}`);\nlines.push('');\nlines.push('Strengths:');\n(base.strengths || []).forEach((s) => lines.push(`  • ${s}`));\nlines.push('Gaps:');\n(base.gaps || []).forEach((g) => lines.push(`  • ${g}`));\n\nif (coach) {\n  lines.push('');\n  lines.push('— Coaching: how to become a stronger fit —');\n  lines.push(coach.improvement_summary || '');\n  lines.push('Priority skills to learn: ' + (coach.priority_skills_to_learn || []).join(', '));\n  lines.push('Resume fixes:');\n  (coach.resume_fixes || []).forEach((f) => lines.push(`  • ${f}`));\n  if (coach.encouragement) lines.push('');\n  if (coach.encouragement) lines.push(coach.encouragement);\n}\n\nconst report_text = lines.join('\\n');\n\nreturn [{ json: { ...base, decision, coach, report_text } }];\n"
+      }
+    },
+    {
+      "id": "append-to-log-file",
+      "name": "Append to Log File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        60
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// DETERMINISTIC NODE — \"Append to Log File\"\n// n8n Code node (Run Once for All Items). Tool use + persistence, no external account.\n//\n// Appends one JSON line per evaluation to a local file so every run is tracked (like a\n// lightweight applicant tracker). Wrapped in try/catch and the node has \"Continue On Fail\"\n// enabled, so if file access is not permitted the workflow still completes (graceful fallback).\n//\n// IMPORTANT: writing files from a Code node requires n8n to allow built-in modules. Start n8n with:\n//   NODE_FUNCTION_ALLOW_BUILTIN=fs,os,path npx n8n\n// If that env var is not set, this node simply skips logging (it will not break the run).\n\nconst b = $json; // output of the \"Weight & Bucket\" node (plus any human decision merged in)\n\nconst row = {\n  timestamp: $now.toISO(),            // n8n built-in current time (Luxon)\n  candidate_name: b.candidate_name,\n  candidate_email: b.candidate_email,\n  role_title: b.role_title,\n  final_score: b.final_score,\n  coverage_pct: b.coverage_pct,\n  category: b.category,\n  decision: b.decision,\n  matched_skills: b.matched_skills,\n  missing_skills: b.missing_skills\n};\n\nlet logged = false;\nlet log_path = '';\ntry {\n  const fs = require('fs');\n  const os = require('os');\n  const path = require('path');\n  log_path = path.join(os.homedir(), 'jd-resume-fit-runs.jsonl');\n  fs.appendFileSync(log_path, JSON.stringify(row) + '\\n');\n  logged = true;\n} catch (err) {\n  // Graceful fallback: logging is best-effort. The report is still returned to the user.\n  logged = false;\n}\n\nreturn [{ json: { ...b, _log: { logged, log_path, row } } }];\n"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "show-result",
+      "name": "Show Result",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.4,
+      "position": [
+        2000,
+        60
+      ],
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "={{ $json.category }} — Fit Report for {{ $json.candidate_name }}",
+        "completionMessage": "={{ $json.report_text }}",
+        "options": {
+          "customCss": ":root {\n  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;\n  --color-background: #eef2ff;\n  --color-card-bg: #ffffff;\n  --color-card-border: #e2e8f0;\n  --color-card-shadow: rgba(15, 23, 42, 0.10);\n  --card-border-radius: 16px;\n  --border-radius-card: 16px;\n  --card-padding: 32px;\n  --color-header: #0f172a;\n  --color-header-subtext: #475569;\n  --font-size-header: 26px;\n  --font-size-subheader: 16px;\n  --color-label: #0f172a;\n  --color-required: #6366f1;\n  --font-weight-bold: 600;\n  --color-input-border: #cbd5e1;\n  --color-input-text: #0f172a;\n  --color-focus-border: #6366f1;\n  --border-radius-input: 10px;\n  --color-submit-btn-bg: #4f46e5;\n  --color-submit-btn-text: #ffffff;\n  --color-html-text: #334155;\n  --color-html-link: #4f46e5;\n  --font-size-paragraph: 15px;\n}\nbody { background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%) !important; }"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Submit JD + Resume": {
+      "main": [
+        [
+          {
+            "node": "Extract Resume Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Resume Text": {
+      "main": [
+        [
+          {
+            "node": "Prepare & Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare & Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Valid Input?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Input?": {
+      "main": [
+        [
+          {
+            "node": "JD Requirement Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JD Requirement Extractor": {
+      "main": [
+        [
+          {
+            "node": "Resume Profiler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Profiler": {
+      "main": [
+        [
+          {
+            "node": "Fit Analyst",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fit Analyst": {
+      "main": [
+        [
+          {
+            "node": "Weight & Bucket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weight & Bucket": {
+      "main": [
+        [
+          {
+            "node": "Route by Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Category": {
+      "main": [
+        [
+          {
+            "node": "Decision: Shortlisted (auto)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Human Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resume Coach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision: Shortlisted (auto)": {
+      "main": [
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Review": {
+      "main": [
+        [
+          {
+            "node": "Decision from Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision from Review": {
+      "main": [
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Coach": {
+      "main": [
+        [
+          {
+            "node": "Decision: Feedback Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision: Feedback Sent": {
+      "main": [
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Report": {
+      "main": [
+        [
+          {
+            "node": "Append to Log File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Log File": {
+      "main": [
+        [
+          {
+            "node": "Show Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "JD Requirement Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Resume Profiler",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Fit Analyst",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Resume Coach",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser: JD Requirements": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "JD Requirement Extractor",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser: Resume Profile": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Resume Profiler",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser: Fit Analysis": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Fit Analyst",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser: Coach Feedback": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Resume Coach",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

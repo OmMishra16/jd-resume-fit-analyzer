@@ -1,0 +1,35 @@
+Aarav Sharma
+Bengaluru, India | aarav.sharma@email.com | github.com/aarav-builds | +91-90000-00000
+
+SUMMARY
+Computer Science graduate with ~1 year of hands-on experience building backend services in
+Python. Comfortable designing REST APIs and shipping features in small teams. Looking to grow
+as a backend engineer in a product-focused company.
+
+SKILLS
+- Languages: Python, JavaScript, SQL (basic)
+- Backend: FastAPI, Flask, REST API design
+- Databases: PostgreSQL (basic queries), SQLite
+- Tools: Git, GitHub, Postman, Linux
+- Currently learning: Docker, AWS
+
+EXPERIENCE
+Backend Developer Intern — PayQuick (Fintech Startup)
+Aug 2024 - Jul 2025 (1 year)
+- Built and maintained 8+ REST API endpoints in FastAPI for a wallet feature used by ~5,000 users.
+- Wrote PostgreSQL queries and integrated them into the service layer.
+- Added unit tests with pytest, raising coverage on my modules from 20% to 65%.
+- Collaborated with the frontend team using Git feature branches and pull requests.
+- Fixed production bugs reported by support and reduced one endpoint's latency by 30%.
+
+PROJECTS
+ExpenseSplit — Python + FastAPI + PostgreSQL
+- A bill-splitting REST API with JWT auth and group expense tracking.
+- Deployed on Render; documented endpoints with Swagger.
+
+EDUCATION
+B.Tech, Computer Science — 2024
+Relevant coursework: Databases, Operating Systems, Web Development
+
+CERTIFICATIONS
+- "REST APIs with FastAPI" (online course, 2024)
