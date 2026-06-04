@@ -5,6 +5,8 @@
 > separated **AI reasoning** and **deterministic control**, plus **routing**, **human-in-the-loop**
 > review, **structured JSON outputs**, and **fallback handling**.
 
+Loom : https://www.loom.com/share/d4b6521548a44f4787bf004466cbf158
+
 ## 1. Problem statement
 
 - **User:** a job-seeking student (and, symmetrically, a recruiter screening many resumes).
